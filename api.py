@@ -107,7 +107,8 @@ async def scrape_linkedin_search(search_keyword: str) -> List[dict]:
     )
 
     # Construct LinkedIn search URL
-    search_url = f"https://www.linkedin.com/search/results/all/?keywords={search_keyword.replace(' ', '%20')}&origin=GLOBAL_SEARCH_HEADER"
+    search_url = f"https://www.linkedin.com/search/results/content/?keywords={search_keyword.replace(' ', '%20')}&origin=SWITCH_SEARCH_VERTICAL"
+    #search_url = f"https://www.linkedin.com/search/results/all/?keywords={search_keyword.replace(' ', '%20')}&origin=GLOBAL_SEARCH_HEADER"
     
     async with AsyncWebCrawler(config=browser_cfg) as crawler:
         print(f"Scraping search: {search_keyword}")
