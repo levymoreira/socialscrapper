@@ -20,7 +20,8 @@ litellm.drop_params = True
 # Once logged in, run this script to use the existing session.
 
 # Test with a simple public page first
-URL_TO_SCRAPE = "https://www.linkedin.com/pulse/topics/home/" 
+URL_TO_SCRAPE = "https://www.linkedin.com/search/results/all/?keywords=vibe%20coding&origin=GLOBAL_SEARCH_HEADER"
+#"https://www.linkedin.com/pulse/topics/home/" 
 INSTRUCTION_TO_LLM = f"Extract any visible LinkedIn posts or articles from this page. Include author names, titles, and any engagement metrics you can find. Current date: {datetime.now().strftime('%Y-%m-%d')}"
 
 # 1 post 
@@ -85,17 +86,21 @@ async def main():
 
     browser_cfg = BrowserConfig(
         # proxy_config=proxy_config,  # Disabled temporarily to test basic functionality
-        headless=True,  # Keep headless for server environment
+        headless=False,  # Keep as False but will run headless due to server environment
         viewport_width=1920,
         viewport_height=1080,
         use_managed_browser=True,  # Use crawl4ai's managed browser
+        browser_type="chromium",
+        user_data_dir="/home/azureuser/.config/google-chrome",  # Use existing profile
         extra_args=[
             "--disable-blink-features=AutomationControlled",
             "--disable-features=site-per-process",
             "--window-size=1920,1080",
             "--no-sandbox",  # Required for server environments
-            "--disable-dev-shm-usage"  # Overcome limited resource problems
-        ]
+            "--disable-dev-shm-usage",  # Overcome limited resource problems
+            "--disable-gpu",  # Disable GPU acceleration in server environment
+        ],
+        debugging_port=9222  # Enable remote debugging
     )
 
     async with AsyncWebCrawler(config=browser_cfg) as crawler:
@@ -113,6 +118,35 @@ async def main():
                 exclude_external_links=True,
                 wait_until="networkidle",
                 js_code="""
+                // Check if user is logged in and click on user account if needed
+                const userButton = document.querySelector('button[data-ember-action*="selectUser"]') || 
+                                 document.querySelector('.account-switcher__user') ||
+                                 document.querySelector('[data-test="account-switcher-button"]') ||
+                                 document.querySelector('.global-nav__me-button');
+                
+                if (userButton && !document.querySelector('.global-nav__me-photo')) {
+                    console.log('Clicking on user account selector...');
+                    userButton.click();
+                    await new Promise(r => setTimeout(r, 2000));
+                    
+                    // Look for user profiles in dropdown and click the first one
+                    const userProfile = document.querySelector('[data-test="account-switcher-user-item"]') ||
+                                      document.querySelector('.account-switcher__item') ||
+                                      document.querySelector('[role="menuitem"]');
+                    
+                    if (userProfile) {
+                        console.log('Clicking on user profile...');
+                        userProfile.click();
+                        await new Promise(r => setTimeout(r, 3000));
+                    }
+                }
+                
+                // Wait a bit more if we're still on login/signin page
+                if (window.location.href.includes('/login') || window.location.href.includes('/signin')) {
+                    console.log('Still on login page, waiting for redirect...');
+                    await new Promise(r => setTimeout(r, 5000));
+                }
+                
                 // Scroll to load more content
                 window.scrollTo(0, document.body.scrollHeight);
                 await new Promise(r => setTimeout(r, 2000));
