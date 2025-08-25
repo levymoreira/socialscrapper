@@ -2,7 +2,7 @@
 
 ## Overview
 
-The LinkedIn Scraper API allows you to scrape LinkedIn search results for multiple keywords asynchronously. The API returns results immediately with a task ID, while the scraping continues in the background.
+The LinkedIn Scraper API allows you to scrape LinkedIn search results for multiple keywords asynchronously. The API performs dual searches per keyword (default sorting and date-posted sorting) to maximize data collection. It returns immediately with a task ID while processing continues in the background.
 
 **Base URL**: `http://localhost:8080`
 
@@ -14,9 +14,9 @@ Make sure the `AZURE_API_TOKEN` environment variable is set with your Azure Open
 
 ### 1. Start Scraping Task
 
-**POST** `/scrape`
+**POST** `/api/linkedin/scrape`
 
-Initiates a LinkedIn scraping task for the provided search keywords.
+Initiates a LinkedIn scraping task for the provided search keywords. Each keyword will be searched twice - once with default relevance sorting and once sorted by date posted.
 
 #### Request Body
 
@@ -43,7 +43,7 @@ Initiates a LinkedIn scraping task for the provided search keywords.
 #### Example Request
 
 ```bash
-curl -X POST "http://localhost:8080/scrape" \
+curl -X POST "http://localhost:8080/api/linkedin/scrape" \
   -H "Content-Type: application/json" \
   -d '{
     "searches": ["vibe coding", "python developer", "machine learning"]
@@ -52,9 +52,9 @@ curl -X POST "http://localhost:8080/scrape" \
 
 ### 2. Get Results
 
-**GET** `/results/{task_id}`
+**GET** `/api/linkedin/results/{task_id}`
 
-Retrieves the results of a scraping task using the task ID.
+Retrieves the results of a scraping task using the task ID. Results will include data from both sorting methods for each search keyword.
 
 #### Parameters
 
@@ -80,7 +80,8 @@ Retrieves the results of a scraping task using the task ID.
           "post_date": "2025-01-15",
           "likes_count": "42",
           "comments_count": "7",
-          "shares_count": "3"
+          "shares_count": "3",
+          "sort_type": "default"
         }
       ],
       "scraped_at": "2025-01-15T10:30:00"
@@ -113,7 +114,7 @@ Retrieves the results of a scraping task using the task ID.
 #### Example Request
 
 ```bash
-curl "http://localhost:8080/results/123e4567-e89b-12d3-a456-426614174000"
+curl "http://localhost:8080/api/linkedin/results/123e4567-e89b-12d3-a456-426614174000"
 ```
 
 ### 3. Health Check
@@ -170,16 +171,19 @@ Each scraped post contains the following fields:
   "post_date": "string (YYYY-MM-DD)",
   "likes_count": "string",
   "comments_count": "string",
-  "shares_count": "string"
+  "shares_count": "string",
+  "sort_type": "string (default | date_posted)"
 }
 ```
 
+**Note**: The `sort_type` field indicates whether the post was retrieved from the default (relevance-based) search or the date-posted sorted search.
+
 ## Usage Workflow
 
-1. **Start Task**: Send a POST request to `/scrape` with your search keywords
+1. **Start Task**: Send a POST request to `/api/linkedin/scrape` with your search keywords
 2. **Get Task ID**: Save the `task_id` from the response
-3. **Poll for Results**: Periodically call GET `/results/{task_id}` to check if processing is complete
-4. **Process Results**: Once `status` is `completed`, process the scraped data
+3. **Poll for Results**: Periodically call GET `/api/linkedin/results/{task_id}` to check if processing is complete
+4. **Process Results**: Once `status` is `completed`, process the scraped data (includes both default and date-sorted results)
 
 ## Example Python Client
 
@@ -189,7 +193,7 @@ import time
 import json
 
 # Start scraping
-response = requests.post('http://localhost:8080/scrape', json={
+response = requests.post('http://localhost:8080/api/linkedin/scrape', json={
     'searches': ['python developer', 'machine learning engineer']
 })
 
@@ -198,7 +202,7 @@ print(f"Task started with ID: {task_id}")
 
 # Poll for results
 while True:
-    result = requests.get(f'http://localhost:8080/results/{task_id}')
+    result = requests.get(f'http://localhost:8080/api/linkedin/results/{task_id}')
     
     if result.status_code == 404:
         print("Task still processing...")
@@ -236,8 +240,10 @@ The server will be available at `http://localhost:8080`
 
 ## Notes
 
-- Results are stored as JSON files in the `results/` directory
+- Results are stored as JSON files in the `results/` directory (excluded from git via .gitignore)
 - The API uses your existing Chrome profile with LinkedIn login
-- Each search keyword generates a separate LinkedIn search URL
+- Each search keyword generates two LinkedIn search URLs (default + date-sorted)
+- The browser session remains open between searches for efficiency
+- Double scrolling is performed on each page to load more content
 - Processing time varies based on the number of searches and LinkedIn's response time
 - Make sure LinkedIn is already logged in your Chrome profile before starting the API

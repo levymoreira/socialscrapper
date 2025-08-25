@@ -257,7 +257,7 @@ async def process_searches(task_id: str, searches: List[str]):
         with open(result_file, 'w') as f:
             json.dump(search_result.model_dump(), f, indent=2)
 
-@app.post("/scrape", response_model=SearchResponse)
+@app.post("/api/linkedin/scrape", response_model=SearchResponse)
 async def start_scraping(request: SearchRequest, background_tasks: BackgroundTasks):
     """
     Start a LinkedIn scraping task for multiple search keywords.
@@ -278,7 +278,7 @@ async def start_scraping(request: SearchRequest, background_tasks: BackgroundTas
         message=f"Scraping task started for {len(request.searches)} searches. Use the task_id to check results."
     )
 
-@app.get("/results/{task_id}")
+@app.get("/api/linkedin/results/{task_id}")
 async def get_results(task_id: str):
     """
     Get the results of a scraping task by task ID.
