@@ -1,0 +1,1 @@
+don't run python from root folder, do cd scraper-on-steroids, then run python main.py
