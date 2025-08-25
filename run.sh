@@ -12,4 +12,4 @@ elif [ -d ".venv" ]; then
 fi
 
 # Run the main.py script
-python main.py
+python3 main.py
