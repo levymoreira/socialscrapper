@@ -55,7 +55,7 @@ proxy_config = {
 }
 
 async def scrape_linkedin_search(search_keyword: str) -> List[dict]:
-    """Scrape LinkedIn for a single search keyword"""
+    """Scrape LinkedIn for a single search keyword with both default and date-sorted results"""
     
     # Azure OpenAI Configuration
     endpoint = "https://automapost-ai-foundry.cognitiveservices.azure.com/"
@@ -74,19 +74,6 @@ async def scrape_linkedin_search(search_keyword: str) -> List[dict]:
         max_tokens=800
     )
     
-    instruction = f"Extract any visible LinkedIn posts or articles from this page. Include author names, titles, and any engagement metrics you can find. Search keyword: {search_keyword}. Current date: {datetime.now().strftime('%Y-%m-%d')}"
-    
-    llm_strategy = LLMExtractionStrategy(
-        llm_config=llm_config,
-        schema=LinkedInPost.model_json_schema(),
-        extraction_type="schema",
-        instruction=instruction,
-        chunk_token_threshold=1000,
-        overlap_rate=0.0,
-        apply_chunking=True,
-        input_format="markdown",
-    )
-
     browser_cfg = BrowserConfig(
         # proxy_config=proxy_config,  # Disabled temporarily to test basic functionality
         headless=False,  # Keep as False but will run headless due to server environment
@@ -106,70 +93,113 @@ async def scrape_linkedin_search(search_keyword: str) -> List[dict]:
         debugging_port=9222  # Enable remote debugging
     )
 
-    # Construct LinkedIn search URL
-    search_url = f"https://www.linkedin.com/search/results/content/?keywords={search_keyword.replace(' ', '%20')}&origin=SWITCH_SEARCH_VERTICAL"
-    #search_url = f"https://www.linkedin.com/search/results/all/?keywords={search_keyword.replace(' ', '%20')}&origin=GLOBAL_SEARCH_HEADER"
+    all_results = []
     
+    # Keep browser session open for both searches
     async with AsyncWebCrawler(config=browser_cfg) as crawler:
-        print(f"Scraping search: {search_keyword}")
-        print(f"URL: {search_url}")
+        # Define search configurations
+        search_configs = [
+            {
+                "sort": "default",
+                "url": f"https://www.linkedin.com/search/results/content/?keywords={search_keyword.replace(' ', '%20')}&origin=SWITCH_SEARCH_VERTICAL"
+            },
+            {
+                "sort": "date_posted", 
+                "url": f"https://www.linkedin.com/search/results/content/?keywords={search_keyword.replace(' ', '%20')}&origin=SWITCH_SEARCH_VERTICAL&sortBy=%22date_posted%22"
+            }
+        ]
         
-        result = await crawler.arun(
-            url=search_url, 
-            config=CrawlerRunConfig(
-                extraction_strategy=llm_strategy,
-                cache_mode=CacheMode.BYPASS,
-                process_iframes=False,
-                remove_overlay_elements=True,
-                exclude_external_links=True,
-                wait_until="networkidle",
-                js_code="""
-                // Check if user is logged in and click on user account if needed
-                const userButton = document.querySelector('button[data-ember-action*="selectUser"]') || 
-                                 document.querySelector('.account-switcher__user') ||
-                                 document.querySelector('[data-test="account-switcher-button"]') ||
-                                 document.querySelector('.global-nav__me-button');
-                
-                if (userButton && !document.querySelector('.global-nav__me-photo')) {
-                    console.log('Clicking on user account selector...');
-                    userButton.click();
-                    await new Promise(r => setTimeout(r, 2000));
-                    
-                    // Look for user profiles in dropdown and click the first one
-                    const userProfile = document.querySelector('[data-test="account-switcher-user-item"]') ||
-                                      document.querySelector('.account-switcher__item') ||
-                                      document.querySelector('[role="menuitem"]');
-                    
-                    if (userProfile) {
-                        console.log('Clicking on user profile...');
-                        userProfile.click();
-                        await new Promise(r => setTimeout(r, 3000));
-                    }
-                }
-                
-                // Wait a bit more if we're still on login/signin page
-                if (window.location.href.includes('/login') || window.location.href.includes('/signin')) {
-                    console.log('Still on login page, waiting for redirect...');
-                    await new Promise(r => setTimeout(r, 5000));
-                }
-                
-                // Scroll to load more content
-                window.scrollTo(0, document.body.scrollHeight);
-                await new Promise(r => setTimeout(r, 2000));
-                """
+        for config in search_configs:
+            print(f"Scraping search: {search_keyword} (sort: {config['sort']})")
+            print(f"URL: {config['url']}")
+            
+            instruction = f"Extract any visible LinkedIn posts or articles from this page. Include author names, titles, and any engagement metrics you can find. Search keyword: {search_keyword}. Sort: {config['sort']}. Current date: {datetime.now().strftime('%Y-%m-%d')}"
+            
+            llm_strategy = LLMExtractionStrategy(
+                llm_config=llm_config,
+                schema=LinkedInPost.model_json_schema(),
+                extraction_type="schema",
+                instruction=instruction,
+                chunk_token_threshold=1000,
+                overlap_rate=0.0,
+                apply_chunking=True,
+                input_format="markdown",
             )
-        )
+            
+            result = await crawler.arun(
+                url=config['url'], 
+                config=CrawlerRunConfig(
+                    extraction_strategy=llm_strategy,
+                    cache_mode=CacheMode.BYPASS,
+                    process_iframes=False,
+                    remove_overlay_elements=True,
+                    exclude_external_links=True,
+                    wait_until="networkidle",
+                    js_code="""
+                    // Check if user is logged in and click on user account if needed
+                    const userButton = document.querySelector('button[data-ember-action*="selectUser"]') || 
+                                     document.querySelector('.account-switcher__user') ||
+                                     document.querySelector('[data-test="account-switcher-button"]') ||
+                                     document.querySelector('.global-nav__me-button');
+                    
+                    if (userButton && !document.querySelector('.global-nav__me-photo')) {
+                        console.log('Clicking on user account selector...');
+                        userButton.click();
+                        await new Promise(r => setTimeout(r, 2000));
+                        
+                        // Look for user profiles in dropdown and click the first one
+                        const userProfile = document.querySelector('[data-test="account-switcher-user-item"]') ||
+                                          document.querySelector('.account-switcher__item') ||
+                                          document.querySelector('[role="menuitem"]');
+                        
+                        if (userProfile) {
+                            console.log('Clicking on user profile...');
+                            userProfile.click();
+                            await new Promise(r => setTimeout(r, 3000));
+                        }
+                    }
+                    
+                    // Wait a bit more if we're still on login/signin page
+                    if (window.location.href.includes('/login') || window.location.href.includes('/signin')) {
+                        console.log('Still on login page, waiting for redirect...');
+                        await new Promise(r => setTimeout(r, 5000));
+                    }
+                    
+                    // Scroll to load more content - first scroll
+                    window.scrollTo(0, document.body.scrollHeight);
+                    await new Promise(r => setTimeout(r, 1000));
+                    
+                    // Second scroll to load even more content
+                    window.scrollTo(0, document.body.scrollHeight);
+                    await new Promise(r => setTimeout(r, 1000));
+                    """
+                )
+            )
 
-        if result.success:
-            try:
-                data = json.loads(result.extracted_content)
-                return data if isinstance(data, list) else [data]
-            except json.JSONDecodeError as e:
-                print(f"Error parsing JSON for search '{search_keyword}': {e}")
-                return [{"error": f"JSON parsing error: {str(e)}", "search_keyword": search_keyword}]
-        else:
-            print(f"Error scraping '{search_keyword}': {result.error_message}")
-            return [{"error": result.error_message, "search_keyword": search_keyword}]
+            if result.success:
+                try:
+                    data = json.loads(result.extracted_content)
+                    results = data if isinstance(data, list) else [data]
+                    # Add sort type to each result
+                    for item in results:
+                        item['sort_type'] = config['sort']
+                    all_results.extend(results)
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing JSON for search '{search_keyword}' (sort: {config['sort']}): {e}")
+                    all_results.append({
+                        "error": f"JSON parsing error: {str(e)}", 
+                        "search_keyword": search_keyword,
+                        "sort_type": config['sort']
+                    })
+            else:
+                print(f"Error scraping '{search_keyword}' (sort: {config['sort']}): {result.error_message}")
+                all_results.append({
+                    "error": result.error_message, 
+                    "search_keyword": search_keyword,
+                    "sort_type": config['sort']
+                })
+    
+    return all_results
 
 async def process_searches(task_id: str, searches: List[str]):
     """Background task to process all searches and save results to file"""
