@@ -1,182 +1,284 @@
-# Scraper on Steroids
+# LinkedIn Scraper API
 
-An advanced web scraper built with Crawl4AI that can extract structured data from web pages using LLM-powered extraction strategies.
+A FastAPI-based LinkedIn scraper that performs dual searches (relevance + date-sorted) for comprehensive data collection. Runs as a background service using PM2 for production reliability.
 
-## Features
+## 🚀 Features
 
-- **LLM-Powered Extraction**: Uses OpenAI's O3-mini model to intelligently extract structured data
-- **Proxy Support**: Built-in proxy configuration for reliable scraping
-- **LinkedIn Scraping**: Specifically configured to scrape LinkedIn posts and extract post details
-- **Async Architecture**: Built with Python asyncio for high performance
-- **Browser Automation**: Uses Playwright for robust web automation
+- **Dual Search Strategy**: Each keyword searched with both relevance and date-posted sorting
+- **Background Processing**: Async task processing with immediate UUID response
+- **Session Persistence**: Browser session stays open for efficiency  
+- **Auto-restart**: PM2 handles crashes and memory limits
+- **Comprehensive Logging**: Timestamped logs for debugging
+- **LLM-Powered Extraction**: Uses Azure OpenAI O3-mini model to intelligently extract structured data
+- **LinkedIn Integration**: Uses existing Chrome profile with LinkedIn login
 
-## Prerequisites
+## 📋 Requirements
 
-- Python 3.8 or higher
-- Git (for cloning the repository)
+- Python 3.10+
+- Node.js (for PM2)
+- Chrome browser with LinkedIn logged in
+- Azure OpenAI API key
 
-## Setup Instructions
+## 🔧 Installation
 
-### 1. Clone the Repository
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd socialscrapper
+   ```
+
+2. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Set up environment**
+   - Your Azure API token is pre-configured in `ecosystem.config.js`
+   - Make sure Chrome has LinkedIn logged in
+
+4. **Make scripts executable**
+   ```bash
+   chmod +x *.sh
+   ```
+
+## 🚀 Quick Start
+
+### 1. Start the API
 ```bash
-git clone <repository-url>
-cd scraper-on-steroids
+./start.sh
 ```
 
-### 2. Create Virtual Environment
+### 2. Check if it's running
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+pm2 status
 ```
 
-### 3. Install Dependencies
+### 3. View logs
 ```bash
-pip install crawl4ai pydantic litellm
+pm2 logs linkedin-api
 ```
 
-### 4. Install Playwright Browsers
+### 4. Stop the API
 ```bash
-playwright install
+./stop.sh
 ```
 
-This will download the necessary browser binaries (Chromium, Firefox, Webkit) required for web scraping.
+## 🏃‍♂️ Running the API
 
-### 5. Configure API Credentials
+### Simple Method (Recommended)
+```bash
+# Start
+./start.sh
 
-The script is currently configured to use OpenAI's O3-mini model through Azure AI. You'll need to:
+# Stop  
+./stop.sh
 
-1. Set up your OpenAI API credentials
-2. Update the API token and base URL in `scraper-on-steroids/main.py`:
-
-```python
-llm_config = LLMConfig(
-    provider="openai/o3-mini",
-    api_token="YOUR_API_TOKEN_HERE",
-    base_url="YOUR_API_BASE_URL_HERE",
-    temperature=1.0,
-    max_tokens=800
-)
+# Restart
+./restart.sh
 ```
 
-### 6. Configure Proxy (Optional)
+### PM2 Commands
 
-If you need proxy support, update the proxy configuration in `main.py`:
+#### Basic Operations
+```bash
+# Start with PM2
+pm2 start ecosystem.config.js
 
-```python
-proxy_config = {
-    "server": "http://your-proxy-server:port",
-    "username": "your-username",
-    "password": "your-password",
+# View all processes
+pm2 list
+pm2 status
+
+# Stop the API
+pm2 stop linkedin-api
+
+# Restart without downtime
+pm2 restart linkedin-api
+
+# Delete from PM2
+pm2 delete linkedin-api
+```
+
+#### Monitoring & Debugging
+```bash
+# Real-time logs
+pm2 logs linkedin-api
+
+# Last 100 lines
+pm2 logs linkedin-api --lines 100
+
+# Monitor CPU/Memory
+pm2 monit
+
+# Process details
+pm2 show linkedin-api
+
+# Clear all logs
+pm2 flush
+```
+
+#### Auto-startup on Reboot
+```bash
+# Generate startup script (run once)
+pm2 startup
+
+# Save current processes
+pm2 save
+
+# Now API will auto-start on server restart
+```
+
+## 📡 API Usage
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/linkedin/scrape` | Start scraping task |
+| GET | `/api/linkedin/results/{task_id}` | Get results |
+| GET | `/health` | Health check |
+| GET | `/docs` | API documentation |
+
+### Example Usage
+
+**1. Start a scraping task:**
+```bash
+curl -X POST "http://localhost:8080/api/linkedin/scrape" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searches": ["python developer", "machine learning", "data scientist"]
+  }'
+```
+
+**Response:**
+```json
+{
+  "task_id": "123e4567-e89b-12d3-a456-426614174000",
+  "status": "started", 
+  "message": "Scraping task started for 3 searches..."
 }
 ```
 
-## Running the Scraper
-
-### Activate Virtual Environment
+**2. Check results:**
 ```bash
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+curl "http://localhost:8080/api/linkedin/results/123e4567-e89b-12d3-a456-426614174000"
 ```
 
-### Run the Script
+**3. Health check:**
 ```bash
-python main.py
+curl http://localhost:8080/health
 ```
 
-## Configuration
+## 📊 Data Structure
 
-### Target URL
-Change the URL to scrape by modifying the `URL_TO_SCRAPE` variable:
+Each scraped post contains:
 
-```python
-URL_TO_SCRAPE = "https://your-target-url.com"
+```json
+{
+  "author_name": "John Doe",
+  "author_url": "https://linkedin.com/in/johndoe", 
+  "post_text": "Great insights on Python development...",
+  "post_url": "https://linkedin.com/posts/...",
+  "post_date": "2025-01-15",
+  "likes_count": "42",
+  "comments_count": "7", 
+  "shares_count": "3",
+  "sort_type": "default" // or "date_posted"
+}
 ```
 
-### Extraction Instructions
-Customize what data to extract by modifying the `INSTRUCTION_TO_LLM` variable:
+## 🔧 Configuration
 
-```python
-INSTRUCTION_TO_LLM = "Extract specific data you want from the page"
-```
+### Environment Variables
+- `AZURE_API_TOKEN` - Pre-configured in ecosystem.config.js
+- `PYTHONUNBUFFERED=1` - For real-time logs
 
-### Data Schema
-Define the expected output structure by modifying the `Product` class:
+### PM2 Configuration (`ecosystem.config.js`)
+- **Memory limit**: 1GB (auto-restart if exceeded)
+- **Auto-restart**: On crashes and errors
+- **Logging**: Timestamped logs in `./logs/` directory
+- **Graceful shutdown**: 3-second timeout
 
-```python
-class Product(BaseModel):
-    field1: str
-    field2: str
-    # Add more fields as needed
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-scraper-on-steroids/
-├── scraper-on-steroids/
-│   └── main.py              # Main scraper script
-├── simple-scraper/          # Alternative TypeScript scraper
-│   ├── src/
-│   │   ├── index.ts
-│   │   └── scraper.ts
-│   └── package.json
-├── venv/                    # Python virtual environment
-├── README.md               # This file
-└── requirements.txt        # Python dependencies (if created)
+socialscrapper/
+├── api.py                 # Main FastAPI application
+├── ecosystem.config.js    # PM2 configuration  
+├── api.sh                 # Enhanced startup script
+├── start.sh               # Easy start command
+├── stop.sh                # Easy stop command
+├── restart.sh             # Easy restart command
+├── api.md                 # API documentation
+├── PM2_USAGE.md          # Detailed PM2 guide
+├── logs/                  # Log files (created automatically)
+│   ├── err.log           # Error logs
+│   ├── out.log           # Output logs  
+│   └── combined.log      # Combined logs
+└── results/              # Scraped data (gitignored)
 ```
 
-## Dependencies
+## 🐛 Troubleshooting
 
-### Python Packages
-- **crawl4ai**: Advanced web crawling and extraction framework
-- **pydantic**: Data validation and serialization
-- **litellm**: LLM provider abstraction layer
-- **playwright**: Browser automation (automatically installed with crawl4ai)
-- **aiohttp**: Async HTTP client
-- **beautifulsoup4**: HTML parsing
-- **lxml**: XML/HTML processing
+### API Won't Start
+```bash
+# Check PM2 status
+pm2 status
 
-### System Requirements
-- **Playwright Browsers**: Chromium, Firefox, Webkit (installed via `playwright install`)
-- **Python 3.8+**: Required for asyncio and modern Python features
+# View error logs
+pm2 logs linkedin-api --err
 
-## Troubleshooting
-
-### Common Issues
-
-1. **ModuleNotFoundError**: Make sure you've activated the virtual environment and installed all dependencies
-2. **Playwright browsers not found**: Run `playwright install` to download browser binaries
-3. **API errors**: Check your API credentials and model configuration
-4. **Proxy errors**: Verify proxy settings and credentials
-5. **Permission errors**: Ensure you have proper permissions to install packages
-
-### Debug Mode
-To enable debug logging for LiteLLM:
-```python
-import litellm
-litellm._turn_on_debug()
+# Try manual start to debug
+./api.sh
 ```
 
-### Alternative Models
-If O3-mini doesn't work, try other models:
-```python
-# OpenAI GPT models
-provider="openai/gpt-4o"
-provider="openai/gpt-3.5-turbo"
+### Port Already in Use
+```bash
+# Stop everything and restart
+./stop.sh
+./start.sh
 
-# Local models (requires Ollama)
-provider="ollama/llama2"
+# Or manually kill port 8080 processes
+sudo lsof -ti:8080 | xargs kill -9
 ```
 
-## Notes
+### High Memory Usage
+```bash
+# Monitor usage
+pm2 monit
 
-- The scraper respects robots.txt and implements rate limiting
-- Some websites may require specific headers or authentication
-- LinkedIn scraping may require session cookies for full access
-- Always comply with website terms of service and legal requirements
+# Restart to free memory
+pm2 restart linkedin-api
+```
 
-## Support
+### Chrome/LinkedIn Issues
+- Ensure Chrome has LinkedIn logged in
+- Check Chrome profile path in `api.py`
+- Verify Chrome browser is accessible
 
-For issues and questions:
-1. Check the Crawl4AI documentation: [Crawl4AI Docs](https://crawl4ai.com)
-2. Review Playwright documentation: [Playwright Docs](https://playwright.dev)
-3. Check LiteLLM documentation: [LiteLLM Docs](https://docs.litellm.ai)
+## 📈 Features
+
+- **Dual Search Strategy**: Each keyword searched with both relevance and date-posted sorting
+- **Background Processing**: Async task processing with immediate UUID response
+- **Session Persistence**: Browser session stays open for efficiency  
+- **Auto-restart**: PM2 handles crashes and memory limits
+- **Comprehensive Logging**: Timestamped logs for debugging
+- **Graceful Shutdown**: Clean process termination
+- **Health Monitoring**: Built-in health check endpoint
+
+## 🔗 Useful Links
+
+- **API Docs**: http://localhost:8080/docs (when running)
+- **Health Check**: http://localhost:8080/health
+- **PM2 Documentation**: https://pm2.keymetrics.io/docs/
+
+## 📝 Notes
+
+- Results are stored as JSON files in `results/` directory
+- Browser session uses existing Chrome profile with LinkedIn login
+- Each search generates 2 LinkedIn URLs (default + date-sorted)
+- Processing time varies based on search complexity
+- Port 8080 is used by default
+
+---
+
+*Generated with PM2 process management for production reliability*
