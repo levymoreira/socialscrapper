@@ -1,0 +1,147 @@
+INFO:     Started server process [869261]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55022 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK
+[BROWSER]. ℹ Starting browser with args: 
+/home/azureuser/.cache/ms-playwright/chromium-1181/chrome-linux/chrome 
+--remote-debugging-port=9222 
+--user-data-dir=/home/azureuser/.config/google-chrome --disable-gpu 
+--disable-gpu-compositing --disable-software-rasterizer --no-sandbox 
+--disable-dev-shm-usage --no-first-run --no-default-browser-check 
+--disable-infobars --window-position=0,0 --ignore-certificate-errors 
+--ignore-certificate-errors-spki-list 
+--disable-blink-features=AutomationControlled --window-position=400,0 
+--disable-renderer-backgrounding --disable-ipc-flooding-protection 
+--force-color-profile=srgb --mute-audio --disable-background-timer-throttling 
+--disable-blink-features=AutomationControlled 
+--disable-features=site-per-process --window-size=1920,1080 --no-sandbox 
+--disable-dev-shm-usage --disable-gpu 
+INFO:     127.0.0.1:55030 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55046 - "GET /api/linkedin/results/81c0f522-f8f1-4713-816c-9a447cc58fa3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55052 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK
+[BROWSER]. ℹ Starting browser with args: 
+/home/azureuser/.cache/ms-playwright/chromium-1181/chrome-linux/chrome 
+--remote-debugging-port=9222 
+--user-data-dir=/home/azureuser/.config/google-chrome --disable-gpu 
+--disable-gpu-compositing --disable-software-rasterizer --no-sandbox 
+--disable-dev-shm-usage --no-first-run --no-default-browser-check 
+--disable-infobars --window-position=0,0 --ignore-certificate-errors 
+--ignore-certificate-errors-spki-list 
+--disable-blink-features=AutomationControlled --window-position=400,0 
+--disable-renderer-backgrounding --disable-ipc-flooding-protection 
+--force-color-profile=srgb --mute-audio --disable-background-timer-throttling 
+--disable-blink-features=AutomationControlled 
+--disable-features=site-per-process --window-size=1920,1080 --no-sandbox 
+--disable-dev-shm-usage --disable-gpu 
+Error processing search 'vibe coding': BrowserContext.set_extra_http_headers: Connection closed while reading from the driver
+Task 81c0f522-f8f1-4713-816c-9a447cc58fa3 completed successfully
+[INIT].... → Crawl4AI 0.7.4 
+Scraping search: python developer (sort: default)
+URL: https://www.linkedin.com/search/results/content/?keywords=python%20developer&origin=SWITCH_SEARCH_VERTICAL
+[FETCH]... ↓ https://www.linkedin.com/search/results/content/...s=python 
+developer&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 18.17s 
+[SCRAPE].. ◆ https://www.linkedin.com/search/results/content/...s=python 
+developer&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 1.39s 
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+[EXTRACT]. ■ https://www.linkedin.com/search/results/content/...s=python 
+developer&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 0.67s 
+[COMPLETE] ● https://www.linkedin.com/search/results/content/...s=python 
+developer&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 20.24s 
+Scraping search: python developer (sort: date_posted)
+URL: https://www.linkedin.com/search/results/content/?keywords=python%20developer&origin=SWITCH_SEARCH_VERTICAL&sortBy=%22date_posted%22
+[FETCH]... ↓ 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 16.30s 
+[SCRAPE].. ◆ 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 0.70s 
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+[EXTRACT]. ■ 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 0.39s 
+[COMPLETE] ● 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 17.42s 
+Task a277833c-7be4-4929-9168-00de39f69926 completed successfully
+INFO:     127.0.0.1:51956 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44490 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44504 - "GET /api/linkedin/results/72abdce8-3505-4746-be31-140298328198 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44520 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK
+[BROWSER]. ℹ pre-launch cleanup failed: Command '[['lsof', '-t', '-i:9222']]' 
+returned non-zero exit status 1. 
+[BROWSER]. ℹ Starting browser with args: 
+/home/azureuser/.cache/ms-playwright/chromium-1181/chrome-linux/chrome 
+--remote-debugging-port=9222 
+--user-data-dir=/home/azureuser/.config/google-chrome --disable-gpu 
+--disable-gpu-compositing --disable-software-rasterizer --no-sandbox 
+--disable-dev-shm-usage --no-first-run --no-default-browser-check 
+--disable-infobars --window-position=0,0 --ignore-certificate-errors 
+--ignore-certificate-errors-spki-list 
+--disable-blink-features=AutomationControlled --window-position=400,0 
+--disable-renderer-backgrounding --disable-ipc-flooding-protection 
+--force-color-profile=srgb --mute-audio --disable-background-timer-throttling 
+--disable-blink-features=AutomationControlled 
+--disable-features=site-per-process --window-size=1920,1080 --no-sandbox 
+--disable-dev-shm-usage --disable-gpu 
+[INIT].... → Crawl4AI 0.7.4 
+Scraping search: vibe coding (sort: default)
+URL: https://www.linkedin.com/search/results/content/?keywords=vibe%20coding&origin=SWITCH_SEARCH_VERTICAL
+[FETCH]... ↓ https://www.linkedin.com/search/results/content/?keywords=vibe 
+coding&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 18.40s 
+[SCRAPE].. ◆ https://www.linkedin.com/search/results/content/?keywords=vibe 
+coding&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 1.27s 
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+[EXTRACT]. ■ https://www.linkedin.com/search/results/content/?keywords=vibe 
+coding&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 0.61s 
+[COMPLETE] ● https://www.linkedin.com/search/results/content/?keywords=vibe 
+coding&origin=SWITCH_SEARCH_VERTICAL  | ✓ | ⏱: 20.32s 
+Scraping search: vibe coding (sort: date_posted)
+URL: https://www.linkedin.com/search/results/content/?keywords=vibe%20coding&origin=SWITCH_SEARCH_VERTICAL&sortBy=%22date_posted%22
+[FETCH]... ↓ 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 15.45s 
+[SCRAPE].. ◆ 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 1.19s 
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+[EXTRACT]. ■ 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 0.38s 
+[COMPLETE] ● 
+https://www.linkedin.com/search/results/content/...igin=SWITCH_SEARCH_VERTICAL&s
+ortBy="date_posted"  | ✓ | ⏱: 17.04s 
+Task 72abdce8-3505-4746-be31-140298328198 completed successfully
+INFO:     127.0.0.1:40366 - "POST /api/linkedin/scrape HTTP/1.1" 200 OK

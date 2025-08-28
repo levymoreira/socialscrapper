@@ -3,9 +3,10 @@ import json
 import os
 import uuid
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 import time
 from pathlib import Path
+import re
 
 import litellm
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -21,6 +22,44 @@ app = FastAPI(title="LinkedIn Scraper API", description="API for scraping Linked
 # Create results directory if it doesn't exist
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
+
+def normalize_search_terms(searches: List[str]) -> str:
+    """Normalize and combine search terms for file naming"""
+    # Sort searches for consistent naming, lowercase, replace spaces with underscores
+    normalized = sorted([s.lower().replace(' ', '_').replace('/', '_') for s in searches])
+    # Join with plus sign and limit length
+    combined = '+'.join(normalized)[:100]  # Limit to 100 chars for filesystem compatibility
+    return re.sub(r'[^a-z0-9_+\-]', '', combined)  # Remove special chars
+
+def get_date_suffix() -> str:
+    """Get current date in dd-mm-yyyy format"""
+    return datetime.now().strftime("%d-%m-%Y")
+
+def find_cached_result(searches: List[str]) -> Optional[str]:
+    """Check if we have cached results for these searches from today"""
+    search_pattern = normalize_search_terms(searches)
+    date_suffix = get_date_suffix()
+    
+    # Look for files matching pattern: *-{search_terms}-{date}.json
+    pattern = f"*-{search_pattern}-{date_suffix}.json"
+    
+    matching_files = list(RESULTS_DIR.glob(pattern))
+    if matching_files:
+        # Return the full task_id (UUID) from the first matching file
+        filename = matching_files[0].stem
+        # UUID is the first 36 characters (8-4-4-4-12 format)
+        task_id = filename[:36] if len(filename) >= 36 else filename.split('-')[0]
+        return task_id
+    return None
+
+def find_result_by_id(task_id: str) -> Optional[Path]:
+    """Find result file by task_id (UUID)"""
+    # Look for files starting with the given UUID
+    pattern = f"{task_id}*.json"
+    matching_files = list(RESULTS_DIR.glob(pattern))
+    if matching_files:
+        return matching_files[0]
+    return None
 
 class LinkedInPost(BaseModel):
     author_name: str = Field(description="Name of the post author")
@@ -76,7 +115,7 @@ async def scrape_linkedin_search(search_keyword: str) -> List[dict]:
     
     browser_cfg = BrowserConfig(
         # proxy_config=proxy_config,  # Disabled temporarily to test basic functionality
-        headless=False,  # Keep as False but will run headless due to server environment
+        headless=True,  # Keep as False but will run headless due to server environment
         viewport_width=1920,
         viewport_height=1080,
         use_managed_browser=True,  # Use crawl4ai's managed browser
@@ -201,9 +240,8 @@ async def scrape_linkedin_search(search_keyword: str) -> List[dict]:
     
     return all_results
 
-async def process_searches(task_id: str, searches: List[str]):
+async def process_searches(task_id: str, searches: List[str], result_file: Path):
     """Background task to process all searches and save results to file"""
-    result_file = RESULTS_DIR / f"{task_id}.json"
     
     # Initialize result structure
     search_result = SearchResult(
@@ -262,15 +300,31 @@ async def start_scraping(request: SearchRequest, background_tasks: BackgroundTas
     """
     Start a LinkedIn scraping task for multiple search keywords.
     Returns immediately with a task ID while processing continues in the background.
+    If cached results exist for today, returns the existing task ID.
     """
     if not request.searches:
         raise HTTPException(status_code=400, detail="At least one search keyword is required")
     
+    # Check for cached results from today
+    cached_task_id = find_cached_result(request.searches)
+    if cached_task_id:
+        return SearchResponse(
+            task_id=cached_task_id,
+            status="cached",
+            message=f"Found cached results from today for these searches. Use the task_id to retrieve results."
+        )
+    
     # Generate unique task ID
     task_id = str(uuid.uuid4())
     
+    # Create filename with search terms and date
+    search_pattern = normalize_search_terms(request.searches)
+    date_suffix = get_date_suffix()
+    filename = f"{task_id}-{search_pattern}-{date_suffix}.json"
+    result_file = RESULTS_DIR / filename
+    
     # Start background processing
-    background_tasks.add_task(process_searches, task_id, request.searches)
+    background_tasks.add_task(process_searches, task_id, request.searches, result_file)
     
     return SearchResponse(
         task_id=task_id,
@@ -282,11 +336,12 @@ async def start_scraping(request: SearchRequest, background_tasks: BackgroundTas
 async def get_results(task_id: str):
     """
     Get the results of a scraping task by task ID.
+    Searches for files matching the UUID pattern.
     Returns 404 if the task doesn't exist or hasn't completed yet.
     """
-    result_file = RESULTS_DIR / f"{task_id}.json"
+    result_file = find_result_by_id(task_id)
     
-    if not result_file.exists():
+    if not result_file or not result_file.exists():
         raise HTTPException(status_code=404, detail="Task not found or not completed yet")
     
     try:
